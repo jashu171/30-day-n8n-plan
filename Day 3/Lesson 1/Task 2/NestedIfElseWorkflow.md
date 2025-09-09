@@ -3,7 +3,7 @@
 
 ---
 
-## 🎯 What the workflow does (short)
+## 🎯 What the workflow does 
 1. Start with a **Manual Trigger**.
 2. Primary check: **Is `value1 > value2`?** (If Node 1)
    - If **no** → end: `Value2 is greater or equal` (False path).
