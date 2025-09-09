@@ -1,4 +1,4 @@
-# 🔁 Nested If / Else Workflow — n8n
+#  Nested If / Else Workflow — n8n
 
 **Professional goal:** Build a clear, step-by-step nested conditional workflow starting from a **Manual Trigger**. This guide is short, practical, and written so a first-time n8n user can implement and test it quickly.
 
