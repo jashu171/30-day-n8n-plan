@@ -12,12 +12,6 @@ By the end of this tutorial, you will be able to automatically make decisions in
 
 ---
 
-## ✅ Prerequisites
-- n8n installed and running (Cloud or Local).
-- Access to the n8n editor (http://localhost:5678 or n8n cloud dashboard).
-
----
-
 ## 🛠 Step-by-Step Workflow
 
 ### 1. Start Workflow
