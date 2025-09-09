@@ -1,8 +1,8 @@
-# 🔁 Nested If / Else Workflow — n8n
+#  Nested If / Else Workflow — n8n
 
 ---
 
-## 🎯 **Goal**
+##  **Goal**
 
 Use nested **If Nodes** to check conditions step by step:  
 
@@ -16,7 +16,7 @@ Use nested **If Nodes** to check conditions step by step:
 
 ---
 
-## 🪜 **Step-by-Step Demo – Manual Trigger → If → Nested If → Results**
+##  **Step-by-Step Demo – Manual Trigger → If → Nested If → Results**
 
 ### Step 1: Start with a Manual Trigger
 
@@ -35,7 +35,7 @@ Use nested **If Nodes** to check conditions step by step:
   * **Operation:** `larger`  
   * **Value 2:** `={{5}}`  
 
-➡️ This checks if **20 > 5**.  
+➡ This checks if **20 > 5**.  
 
 ---
 
@@ -49,7 +49,7 @@ Use nested **If Nodes** to check conditions step by step:
   }
   ```  
 
-➡️ If the condition fails, this message will be the result.
+➡ If the condition fails, this message will be the result.
 
 ---
 
@@ -62,7 +62,7 @@ Use nested **If Nodes** to check conditions step by step:
   * **Operation:** `larger`  
   * **Value 2:** `={{8}}`  
 
-➡️ This checks if the **difference (15) > 8**.  
+➡ This checks if the **difference (15) > 8**.  
 
 ---
 
@@ -100,12 +100,12 @@ Use nested **If Nodes** to check conditions step by step:
 
 ---
 
-## 📝 **Key Takeaway for Students**
+##  **Key Takeaway for Students**
 
-👉 **Manual Trigger** starts the workflow.  
-👉 **If Node** makes the first decision.  
-👉 **Nested If** refines the decision further.  
-👉 **Different Set Nodes** provide clear outputs for each path.  
+ **Manual Trigger** starts the workflow.  
+ **If Node** makes the first decision.  
+ **Nested If** refines the decision further.  
+**Different Set Nodes** provide clear outputs for each path.  
 
 Together, this shows how to build **multi-level decisions** in n8n using nested If nodes.
 
