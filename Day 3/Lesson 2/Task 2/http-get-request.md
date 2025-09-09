@@ -23,19 +23,6 @@ Expected result (example):
 
 ---
 
-## Prerequisites
-1) n8n is running (local default: http://localhost:5678).  
-2) Internet access available.  
-3) You are in the n8n Editor UI (the canvas).
-
-Key terms:
-- Node: A block that does one job (trigger, request, format, etc.).
-- Canvas: The area where you place and connect nodes.
-- Connection: A line connecting the output of one node to the input of another.
-- Execute Node vs Execute Workflow: You can run a single node or run the whole flow from the start.
-
----
-
 ## Step 1 — Create a New Workflow  (drag and drop required)
 1. On the top bar, click **New** to create a blank workflow.
 2. Click the workflow name (top‑left) and rename it to: **HTTP GET — Basic Demo**.
