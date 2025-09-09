@@ -1,8 +1,8 @@
-# 🌐 Webhooks — Making n8n Listen to the World
+#  Webhooks — Making n8n Listen to the World
 
 ---
 
-## 🎯 Goal
+##  Goal
 
 Make n8n receive HTTP requests from the outside world using a **Webhook**:
 - Accept a JSON payload `{ "name": "Asha", "age": 22 }`
@@ -11,9 +11,9 @@ Make n8n receive HTTP requests from the outside world using a **Webhook**:
 
 ---
 
-## 🪜 Step-by-Step (with sub-steps)
+##  Step-by-Step (with sub-steps)
 
-### 1️⃣ Add Webhook (entry point)
+### 1️ Add Webhook (entry point)
 - In the editor, click **+** → search **Webhook** → add.
 - Configure:
   - **HTTP Method:** `POST`
@@ -26,7 +26,7 @@ Make n8n receive HTTP requests from the outside world using a **Webhook**:
 
 ---
 
-### 2️⃣ Add If (check the payload)
+### 2️ Add If (check the payload)
 - Click **+** → add **If** → connect **Webhook → If**.
 - Configure **Number** condition:
   - **Value 1:** `={{ $json["age"] }}`
@@ -37,21 +37,21 @@ Make n8n receive HTTP requests from the outside world using a **Webhook**:
 
 ---
 
-### 3️⃣ Add Set nodes for clear messages (optional but helpful)
+### 3️ Add Set nodes for clear messages (optional but helpful)
 - **True branch** (from If’s green output):
   - Add **Set** → field:
     ```json
-    { "message": "✅ Adult — access permitted", "received_name": "={{$json["name"]}}", "age": "={{$json["age"]}}" }
+    { "message": " Adult — access permitted", "received_name": "={{$json["name"]}}", "age": "={{$json["age"]}}" }
     ```
 - **False branch** (from If’s red output):
   - Add **Set** → field:
     ```json
-    { "message": "🟡 Minor — access limited", "received_name": "={{$json["name"]}}", "age": "={{$json["age"]}}" }
+    { "message": " Minor — access limited", "received_name": "={{$json["name"]}}", "age": "={{$json["age"]}}" }
     ```
 
 ---
 
-### 4️⃣ Add Respond to Webhook (send the reply)
+### 4️ Add Respond to Webhook (send the reply)
 - Add **Respond to Webhook** node.
 - Connect **Set (True) → Respond** and **Set (False) → Respond**.
 - Configure:
@@ -62,7 +62,7 @@ Make n8n receive HTTP requests from the outside world using a **Webhook**:
 
 ---
 
-## 🔄 Visual Flow (mock diagram)
+##  Visual Flow (mock diagram)
 
 ```
 Client (POST JSON)
@@ -82,7 +82,7 @@ Client (POST JSON)
 
 ---
 
-## ▶️ How to test (Local & Internet)
+## ▶ How to test (Local & Internet)
 
 ### A) Local test (Test URL)
 1. Click **Execute Workflow** (top-right).
@@ -93,7 +93,7 @@ Client (POST JSON)
    ```
 4. You should receive:
    ```json
-   { "message":"✅ Adult — access permitted","received_name":"Asha","age":22 }
+   { "message":" Adult — access permitted","received_name":"Asha","age":22 }
    ```
 
 ### B) Public test with ngrok (Production URL)
@@ -117,12 +117,12 @@ Client (POST JSON)
    ```
 6. You should receive:
    ```json
-   { "message":"🟡 Minor — access limited","received_name":"Ravi","age":15 }
+   { "message":" Minor — access limited","received_name":"Ravi","age":15 }
    ```
 
 ---
 
-## 🧪 Tips & Common Fixes
+##  Tips & Common Fixes
 
 - **“Could not activate the workflow”**  
   - Another workflow already uses the same Webhook path or method. Change **Path** (e.g., `listen/basic-2`) or disable the other workflow.
@@ -137,7 +137,7 @@ Client (POST JSON)
 
 ---
 
-## ✅ Key Takeaways
+##  Key Takeaways
 
 - **Webhook** node = entry for external HTTP requests.  
 - **If** + **Set** = simple, readable decision and message building.  
