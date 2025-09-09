@@ -28,9 +28,9 @@ A practical, beginner-friendly roadmap to learn n8n in 30 days. Each day deliver
 
 Recommended install options (choose one):
 ```text
-+ n8n Desktop        → https://n8n.io/desktop
-+ n8n Cloud (hosted) or n8n in ngrok  → https://n8n.io/cloud
 + Local (node)       → npm install -g n8n  → run: n8n
++ n8n  hosted in ngrok or cloud  → https://n8n.io/cloud
+
 ```
 
 ---
