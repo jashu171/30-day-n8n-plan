@@ -82,7 +82,7 @@ Client (POST JSON)
 
 ---
 
-## ▶ How to test (Local & Internet)
+##  How to test (Local & Internet)
 
 ### A) Local test (Test URL)
 1. Click **Execute Workflow** (top-right).
