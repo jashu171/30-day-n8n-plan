@@ -1,8 +1,8 @@
-# 🔗 AND & OR Logic Workflow — n8n
+#  AND & OR Logic Workflow — n8n
 
 ---
 
-## 🎯 Goal
+##  Goal
 
 Learn how to use **AND** and **OR** conditions with the **If Node** in n8n.  
 - Start with a **Manual Trigger**.  
@@ -12,7 +12,7 @@ Learn how to use **AND** and **OR** conditions with the **If Node** in n8n.
 
 ---
 
-## 🪜 Step-by-Step Demo
+##  Step-by-Step Demo
 
 ### Step 1: Add Manual Trigger
 - Drag in a **Manual Trigger Node**.  
@@ -34,11 +34,11 @@ Learn how to use **AND** and **OR** conditions with the **If Node** in n8n.
 ### Step 3: Handle AND Results
 - From **True output** → Add a Set Node:
 ```json
-{ "message": "✅ User is an adult AND from India" }
+{ "message": " User is an adult AND from India" }
 ```
 - From **False output** → Add a Set Node:
 ```json
-{ "message": "❌ Condition failed (either not adult or not from India)" }
+{ "message": " Condition failed (either not adult or not from India)" }
 ```
 
 ---
@@ -57,16 +57,16 @@ Learn how to use **AND** and **OR** conditions with the **If Node** in n8n.
 ### Step 5: Handle OR Results
 - From **True output** → Add a Set Node:
 ```json
-{ "message": "🏆 Qualified by score or rank" }
+{ "message": " Qualified by score or rank" }
 ```
 - From **False output** → Add a Set Node:
 ```json
-{ "message": "❌ Did not qualify" }
+{ "message": " Did not qualify" }
 ```
 
 ---
 
-## 🔄 Mock Diagram
+##  Mock Diagram
 
 ```
 Manual Trigger
@@ -96,13 +96,13 @@ Manual Trigger
 
 ---
 
-## 📥 Importable JSON
+##  Importable JSON
 
 See the provided **demo.json** file for direct import in n8n.
 
 ---
 
-## 📝 Key Takeaway
+##  Key Takeaway
 
-👉 **AND** = All conditions must be true.  
-👉 **OR** = Any one condition is enough.  
+ **AND** = All conditions must be true.  
+ **OR** = Any one condition is enough.  
