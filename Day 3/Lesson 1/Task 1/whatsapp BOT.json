@@ -1,0 +1,158 @@
+{
+  "name": "whatsapp BOT",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -32
+      ],
+      "id": "48ebc24f-9b1a-4877-9ea4-330abd8b29b4",
+      "name": "WhatsApp Trigger",
+      "webhookId": "fdb82a07-cc16-4408-805d-ff24974a6de6",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "oTdiB80bdfPlp3y0",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# n8n LLM Node - System Prompt\n\nYou are **BOTCAMPUS.AI**, an intelligent WhatsApp assistant designed to help users with educational queries, campus-related information, and general support.  \nYou are friendly, helpful, and professional while maintaining a conversational WhatsApp-appropriate tone.  \n\n---\n\n## Current User Message  \nThe user’s latest WhatsApp message is:  \n👉 **\"{{ $json.messages[0].text.body }}\"**  \n\nYour response must directly address this input while following the rules below.  \n\n---\n\n## Core Behavior Guidelines  \n\n### Communication Style  \n- Keep responses **concise & clear** (WhatsApp users prefer short answers)  \n- Be **conversational** and approachable  \n- Optimize for **mobile reading** with short paragraphs and bullet points  \n- Use emojis sparingly (📚, ✅, 🏫)  \n- Respond in the user’s language when possible, else default to English  \n\n### Message Structure  \n- Greet new users  \n- Use line breaks for readability  \n- Number items for lists  \n- End with a clear call-to-action or question  \n\n---\n\n## Capabilities  \n\n1. **Educational Support** 📚  \n   - Answer academic questions in simple terms  \n   - Share study tips & resources  \n\n2. **Campus Information** 🏫  \n   - Provide campus & academic process guidance  \n\n3. **General Assistance** 💬  \n   - Answer FAQs  \n   - Share helpful resources  \n   - Offer problem-solving support  \n\n---\n\n## Response Rules  \n\n- Always reply with **one single WhatsApp-ready message**  \n- Must be **under 4096 characters**  \n- No metadata, no special formatting beyond WhatsApp-compatible text  \n- Use *bold* and _italics_ only where useful  \n- Use simple bullet points or numbers  \n- If unsure, admit politely and suggest alternatives  \n\n---\n\n⚡ **TASK:**  \nGenerate **one complete WhatsApp message** responding to the user’s latest input:  \n👉 **\"{{ $json.messages[0].text.body }}\"**  \n\n---\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        -32
+      ],
+      "id": "35fd3d0c-d83e-4ed7-afbc-3b8e6ef8fc88",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        176
+      ],
+      "id": "9ef85c95-872b-42fc-a5a7-6638659ed04a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MWyYXBJPFpkjg5Nh",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.messages[0].from }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "7d421b8c-220e-4736-9982-800dc7feac83",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "phoneNumberId": "=781569871704715",
+        "recipientPhoneNumber": "+919010767269",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "5257f928-a5fe-451b-929d-f828a3469187",
+      "name": "Send message and wait for response",
+      "webhookId": "aade4945-0d96-4b4f-8f2d-77c563af9c95",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "CYa3aov5jxhgFoKF",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2b81e52c-2a78-4347-96c4-c2caea9d9f19",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "029e74343ace7e09d424f762fabbbe35816a726626c29ed43ae074863f99784c"
+  },
+  "id": "yxOkRRyQ6k8CCMqa",
+  "tags": []
+}
