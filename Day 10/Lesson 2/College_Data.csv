@@ -1,0 +1,11 @@
+CollegeID,CollegeName,Branch,Address,City,State,Email
+C001,National Institute of Technology 01,CSE,12/7 MG Road,Hyderabad,Telangana,admissions@national.edu.org
+C002,Global Institute of Technology 02,ECE,45/21 Park Street,Bengaluru,Karnataka,admissions@global.edu.org
+C003,Heritage Institute of Technology 03,IT,89/5 Ring Road,Chennai,Tamil Nadu,admissions@heritage.edu.org
+C004,Greenfield Institute of Technology 04,Mechanical,102/9 College Rd,Pune,Maharashtra,admissions@greenfield.edu.org
+C005,Sunrise Institute of Technology 05,Civil,77/18 IT Park,Mumbai,Maharashtra,admissions@sunrise.edu.org
+C006,Techno Institute of Technology 06,EEE,33/2 NH-44,Delhi,Delhi,admissions@techno.edu.org
+C007,Metro Institute of Technology 07,,14/3 MG Road,Kolkata,West Bengal,admissions@metro.edu.org
+C008,Riverdale Institute of Technology 08,AI&DS,,Ahmedabad,Gujarat,admissions@riverdale.edu.org
+C009,National Institute of Technology 09,,19/11 Ring Road,Jaipur,Rajasthan,admissions@national.edu.org
+C010,Global Institute of Technology 10,MBA,210/44 Park Street,Lucknow,Uttar Pradesh,

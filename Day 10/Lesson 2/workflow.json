@@ -1,0 +1,629 @@
+{
+  "name": "AI Data Analyst demo workflwo",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2e1280e0-b7bc-4913-9cd3-89ea766abaf7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1wy6c4mNoH2wDJERtpHR986K8SExJWzbx",
+          "mode": "list",
+          "cachedResultName": "College_Data.csv",
+          "cachedResultUrl": "https://drive.google.com/file/d/1wy6c4mNoH2wDJERtpHR986K8SExJWzbx/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "9efdd4d4-6f22-4b2c-aef8-6fb1b1e84c37",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DDww6KfVnEMmLdiU",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        384,
+        -16
+      ],
+      "id": "34d9f627-71fb-4464-8d63-1a6297044047",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// INPUT: items = one item per CSV row (from Spreadsheet File)\n// OUTPUT: a single consolidated item with cleaned data, stats, and a compact summary for AI\n\nfunction isNullish(v) {\n  if (v === null || v === undefined) return true;\n  if (typeof v === 'string') {\n    const s = v.trim().toLowerCase();\n    return s === '' || s === 'na' || s === 'null' || s === 'none' || s === 'nan';\n  }\n  return false;\n}\n\nconst rows = $input.all().map(it => it.json);\nif (!rows.length) {\n  return [{ json: { rowCount: 0, columns: [], cleanedRows: [], numericColumns: [], means: {}, missingCounts: {}, summaryText: 'No data rows found.' } }];\n}\n\nconst columns = Object.keys(rows[0] || {});\n// detect numeric columns (at least ~60% parseable)\nconst numericColumns = columns.filter(col => {\n  let total = 0, parseable = 0;\n  for (const r of rows) {\n    const v = r[col];\n    if (!isNullish(v)) {\n      total++;\n      if (!Number.isNaN(parseFloat(String(v).replace(/,/g, '')))) parseable++;\n    }\n  }\n  if (total === 0) return false;\n  return (parseable / total) >= 0.6;\n});\n\n// compute means ignoring nullish\nconst sums = {}, counts = {}, means = {};\nnumericColumns.forEach(c => { sums[c] = 0; counts[c] = 0; });\n\nfor (const r of rows) {\n  for (const c of numericColumns) {\n    const v = r[c];\n    if (!isNullish(v)) {\n      const num = parseFloat(String(v).replace(/,/g, ''));\n      if (!Number.isNaN(num)) {\n        sums[c] += num;\n        counts[c] += 1;\n      }\n    }\n  }\n}\n\nfor (const c of numericColumns) {\n  means[c] = counts[c] ? (sums[c] / counts[c]) : 0;\n}\n\n// replace nulls in numeric columns with mean\nconst cleanedRows = rows.map(r => {\n  const out = { ...r };\n  for (const c of numericColumns) {\n    const v = r[c];\n    if (isNullish(v)) {\n      out[c] = means[c];\n    } else {\n      const num = parseFloat(String(v).replace(/,/g, ''));\n      out[c] = Number.isNaN(num) ? means[c] : num;\n    }\n  }\n  return out;\n});\n\n// missing counts per column (pre-clean)\nconst missingCounts = {};\nfor (const c of columns) {\n  let m = 0;\n  for (const r of rows) if (isNullish(r[c])) m++;\n  missingCounts[c] = m;\n}\n\nconst rowCount = cleanedRows.length;\nconst maxRowsForAI = Number($json.maxRowsForAI ?? 200);\nconst previewRows = cleanedRows.slice(0, Math.min(rowCount, maxRowsForAI));\n\n// build a compact, AI-friendly summary\nconst lines = [];\nlines.push(`Rows: ${rowCount}`);\nlines.push(`Columns: ${columns.join(', ')}`);\nlines.push(`Numeric Columns: ${numericColumns.join(', ') || '(none)'}`);\nlines.push(`Means: ${JSON.stringify(means)}`);\nlines.push(`Missing (before clean): ${JSON.stringify(missingCounts)}`);\nlines.push(`Sample (first ${previewRows.length} rows):`);\nlines.push(JSON.stringify(previewRows, null, 2));\n\nconst summaryText = lines.join('\\n');\n\nreturn [{\n  json: {\n    rowCount,\n    columns,\n    numericColumns,\n    means,\n    missingCounts,\n    cleanedRows,\n    summaryText\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -16
+      ],
+      "id": "d250bac7-a01f-424c-ab61-68ac9fc98060",
+      "name": "Code in JavaScript",
+      "notesInFlow": true,
+      "notes": "Data Preparation Replacing null Instead of Mean Values "
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a data summarization and reasoning assistant.\nYou always output valid, minified JSON with the following schema:\n\n{\n  \"subject\": \"string\",\n  \"summary_html\": \"string (HTML body; short but information-dense; must be valid HTML)\",\n  \"reasoning\": \"string (plain text with concise insights)\"\n}\n\nRules:\n- Do not include markdown in summary_html; use clean HTML tags only.\n- Base your summary and reasoning strictly on the user-provided CSV summary.\n- Keep the language precise and neutral. No fluff.\n\nUser Message → set to:\n\nHere is a compact summary of a cleaned CSV:\n\n{{ $json.summaryText }}\n\nPlease produce the JSON object as specified in the system instruction.\n\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        -368
+      ],
+      "id": "f27ecd0d-ab77-44d2-bcfb-72cbd8313efb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        -144
+      ],
+      "id": "148a996e-3bc2-4f07-9990-e1a7f5c930fb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "cLCdY5swsxgvlPYD",
+          "name": "Open AI API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1232,
+        32
+      ],
+      "id": "c31cd83b-0844-418c-b1ff-006ea82abdd2",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code (JavaScript) — works with your current Merge output (two items)\n// Input items:\n//  - AI item: { output: \"<stringified JSON: {subject, summary_html, reasoning}>\" }\n//  - Data item: { columns, numericColumns, means, cleanedRows, summaryText, ... }\n//\n// Output (single item):\n//  { email_subject, email_html, chart_url, columns, numericColumns }\n\nfunction robustParseJson(text) {\n  const t = String(text || '').trim();\n  if (!t) return {};\n  try { return JSON.parse(t); } catch {}\n  const s = t.indexOf('{'), e = t.lastIndexOf('}');\n  if (s !== -1 && e !== -1 && e > s) {\n    try { return JSON.parse(t.slice(s, e + 1)); } catch {}\n  }\n  return {};\n}\n\nfunction isNullish(v) {\n  if (v === null || v === undefined) return true;\n  if (typeof v === 'string') {\n    const s = v.trim().toLowerCase();\n    return s === '' || s === 'na' || s === 'null' || s === 'none' || s === 'nan';\n  }\n  return false;\n}\n\nfunction detectNumericColumns(rows) {\n  if (!rows?.length) return [];\n  const cols = Object.keys(rows[0] || {});\n  const out = [];\n  for (const c of cols) {\n    let seen = 0, ok = 0;\n    for (const r of rows) {\n      const v = r[c];\n      if (isNullish(v)) continue;\n      seen++;\n      const num = typeof v === 'number' ? v : parseFloat(String(v).replace(/,/g, ''));\n      if (Number.isFinite(num)) ok++;\n    }\n    if (seen > 0 && ok / seen >= 0.6) out.push(c);\n  }\n  return out;\n}\n\nfunction pickSeries(rows, columns, numericColumns, hint) {\n  const dateCol = columns?.find(c => /date|day|timestamp|time/i.test(c));\n  const xCol = dateCol || 'index';\n\n  let yCol = '';\n  if (hint && numericColumns?.includes(hint)) yCol = hint;\n  if (!yCol && numericColumns?.length) yCol = numericColumns[0];\n\n  const labels = [];\n  const values = [];\n  for (let i = 0; i < (rows?.length || 0); i++) {\n    const r = rows[i] || {};\n    let label;\n    if (dateCol) {\n      const v = r[dateCol];\n      const d = new Date(v);\n      label = isNaN(d.getTime()) ? String(v) : d.toISOString().slice(0,10);\n    } else {\n      label = String(i + 1);\n    }\n    labels.push(label);\n    const raw = r[yCol];\n    const num = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/,/g, ''));\n    values.push(Number.isFinite(num) ? num : NaN);\n  }\n  return { xCol, yCol, labels, values };\n}\n\nfunction downsample(labels, values, maxPoints = 200) {\n  const n = labels.length;\n  if (n <= maxPoints) return { labels, values };\n  const step = Math.ceil(n / maxPoints);\n  const L = [], V = [];\n  for (let i = 0; i < n; i += step) { L.push(labels[i]); V.push(values[i]); }\n  return { labels: L, values: V };\n}\n\nfunction buildQuickChartURL(cfg) {\n  const base = 'https://quickchart.io/chart?width=900&height=420&devicePixelRatio=2&c=';\n  return base + encodeURIComponent(JSON.stringify(cfg));\n}\n\nconst escapeHTML = s => String(s || '').replace(/[<>&]/g, m => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[m]));\n\n// ---- 1) Gather BOTH incoming items from Merge ----\nconst all = $input.all();                  // two items expected\nlet aiStr = '';\nlet data = {};\nfor (const it of all) {\n  const j = it.json || {};\n  if (!aiStr && typeof j.output === 'string') aiStr = j.output;  // AI JSON string\n  // accumulate data fields if present\n  if (j.columns || j.numericColumns || j.cleanedRows || j.means || j.summaryText) {\n    data = { ...data, ...j };\n  }\n}\n\n// ---- 2) Parse AI ----\nconst ai = robustParseJson(aiStr);\nconst subject = ai.subject || 'Summary of Dataset';\nconst summaryHtml = ai.summary_html || '<p>No summary_html from AI.</p>';\nconst reasoning = ai.reasoning || '';\n\n// ---- 3) Extract/repair data ----\nlet cleanedRows = Array.isArray(data.cleanedRows) ? data.cleanedRows : [];\nlet columns = Array.isArray(data.columns) ? data.columns\n             : (cleanedRows[0] ? Object.keys(cleanedRows[0]) : []);\nlet numericColumns = Array.isArray(data.numericColumns) ? data.numericColumns : [];\nconst means = data.means || {};\nconst chartHint = data.chartMetricHint || '';\n\n// If numericColumns missing, detect from cleanedRows\nif (!numericColumns.length && cleanedRows.length) {\n  numericColumns = detectNumericColumns(cleanedRows);\n}\n\n// ---- 4) Build chart URL (rows-series first, fallback to means) ----\nlet chartUrl = '';\nlet chartTitle = '';\n\nif (numericColumns.length && cleanedRows.length) {\n  const { xCol, yCol, labels, values } = pickSeries(cleanedRows, columns, numericColumns, chartHint);\n  if (values.some(v => Number.isFinite(v))) {\n    const ds = downsample(labels, values, 200);\n    const cfg = {\n      type: 'line',\n      data: { labels: ds.labels, datasets: [{ label: yCol, data: ds.values, fill: false, tension: 0.3 }] },\n      options: {\n        plugins: { legend: { display: false }, title: { display: true, text: `Trend of ${yCol}` } },\n        scales: { x: { title: { display: true, text: xCol } }, y: { title: { display: true, text: yCol } } }\n      }\n    };\n    chartUrl = buildQuickChartURL(cfg);\n    chartTitle = `Line Chart — ${yCol}`;\n  }\n}\n\n// Fallback: line chart of means per numeric column (guarantees a chart when possible)\nif (!chartUrl) {\n  const keys = numericColumns.length ? numericColumns : Object.keys(means || {});\n  const vals = keys.map(k => {\n    const v = means[k];\n    const n = typeof v === 'number' ? v : parseFloat(String(v));\n    return Number.isFinite(n) ? n : NaN;\n  }).filter(v => Number.isFinite(v));\n\n  if (keys.length && vals.length) {\n    const cfg = {\n      type: 'line',\n      data: { labels: keys, datasets: [{ label: 'Mean', data: vals, fill: false, tension: 0.3 }] },\n      options: {\n        plugins: { legend: { display: false }, title: { display: true, text: 'Means per Numeric Column' } },\n        scales: { x: { title: { display: true, text: 'Metric' } }, y: { title: { display: true, text: 'Mean' } } }\n      }\n    };\n    chartUrl = buildQuickChartURL(cfg);\n    chartTitle = 'Line Chart — Means';\n  }\n}\n\n// ---- 5) Compose email HTML ----\nconst emailHtml = `\n  <div style=\"font-family:Arial, Helvetica, sans-serif; line-height:1.5;\">\n    ${summaryHtml}\n    <hr style=\"margin:24px 0; border:none; border-top:1px solid #ddd;\" />\n    ${chartUrl ? `\n      <h3 style=\"margin:0 0 8px;\">${chartTitle}</h3>\n      <img src=\"${chartUrl}\" alt=\"Line chart\" style=\"max-width:100%; height:auto; display:block;\" />\n    ` : `\n      <p style=\"color:#777; margin:0;\">No numeric series available for charting.</p>\n    `}\n    ${reasoning ? `\n      <hr style=\"margin:24px 0; border:none; border-top:1px solid #eee;\" />\n      <details>\n        <summary style=\"cursor:pointer; color:#444;\">Model reasoning (compact)</summary>\n        <pre style=\"white-space:pre-wrap; background:#fafafa; padding:12px; border:1px solid #eee; border-radius:6px;\">${escapeHTML(reasoning)}</pre>\n      </details>\n    ` : '' }\n  </div>\n`;\n\nreturn [{\n  json: {\n    columns: columns || [],\n    numericColumns: numericColumns || [],\n    email_subject: subject,\n    email_html: emailHtml,\n    chart_url: chartUrl\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        16
+      ],
+      "id": "e8223012-6cfc-4e12-89e9-fbd804ff6f84",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "sendTo": "jashwanthboddupally@gmail.com,support@botcampus.ai",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_html }}\nhttps://drive.google.com/file/d/1wy6c4mNoH2wDJERtpHR986K8SExJWzbx/view?usp=drive_link",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1728,
+        16
+      ],
+      "id": "2aadee18-8a3d-4d9f-b5d2-cf9d9a8470bf",
+      "name": "Send a message",
+      "webhookId": "55f6fa13-9ee3-40b5-8b44-1054966b449f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "H8FsF1EFAlLLjH1d",
+          "name": "N8n office setup"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Extract from File": [
+      {
+        "json": {
+          "CollegeID": "C001",
+          "CollegeName": "National Institute of Technology 01",
+          "Branch": "CSE",
+          "Address": "12/7 MG Road",
+          "City": "Hyderabad",
+          "State": "Telangana",
+          "Email": "admissions@national.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C002",
+          "CollegeName": "Global Institute of Technology 02",
+          "Branch": "ECE",
+          "Address": "45/21 Park Street",
+          "City": "Bengaluru",
+          "State": "Karnataka",
+          "Email": "admissions@global.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C003",
+          "CollegeName": "Heritage Institute of Technology 03",
+          "Branch": "IT",
+          "Address": "89/5 Ring Road",
+          "City": "Chennai",
+          "State": "Tamil Nadu",
+          "Email": "admissions@heritage.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C004",
+          "CollegeName": "Greenfield Institute of Technology 04",
+          "Branch": "Mechanical",
+          "Address": "102/9 College Rd",
+          "City": "Pune",
+          "State": "Maharashtra",
+          "Email": "admissions@greenfield.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C005",
+          "CollegeName": "Sunrise Institute of Technology 05",
+          "Branch": "Civil",
+          "Address": "77/18 IT Park",
+          "City": "Mumbai",
+          "State": "Maharashtra",
+          "Email": "admissions@sunrise.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C006",
+          "CollegeName": "Techno Institute of Technology 06",
+          "Branch": "EEE",
+          "Address": "33/2 NH-44",
+          "City": "Delhi",
+          "State": "Delhi",
+          "Email": "admissions@techno.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C007",
+          "CollegeName": "Metro Institute of Technology 07",
+          "Address": "14/3 MG Road",
+          "City": "Kolkata",
+          "State": "West Bengal",
+          "Email": "admissions@metro.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C008",
+          "CollegeName": "Riverdale Institute of Technology 08",
+          "Branch": "AI&DS",
+          "City": "Ahmedabad",
+          "State": "Gujarat",
+          "Email": "admissions@riverdale.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C009",
+          "CollegeName": "National Institute of Technology 09",
+          "Address": "19/11 Ring Road",
+          "City": "Jaipur",
+          "State": "Rajasthan",
+          "Email": "admissions@national.edu.org"
+        }
+      },
+      {
+        "json": {
+          "CollegeID": "C010",
+          "CollegeName": "Global Institute of Technology 10",
+          "Branch": "MBA",
+          "Address": "210/44 Park Street",
+          "City": "Lucknow",
+          "State": "Uttar Pradesh"
+        }
+      }
+    ],
+    "Code in JavaScript": [
+      {
+        "json": {
+          "rowCount": 10,
+          "columns": [
+            "CollegeID",
+            "CollegeName",
+            "Branch",
+            "Address",
+            "City",
+            "State",
+            "Email"
+          ],
+          "numericColumns": [
+            "Address"
+          ],
+          "means": {
+            "Address": 66.77777777777777
+          },
+          "missingCounts": {
+            "CollegeID": 0,
+            "CollegeName": 0,
+            "Branch": 2,
+            "Address": 1,
+            "City": 0,
+            "State": 0,
+            "Email": 1
+          },
+          "cleanedRows": [
+            {
+              "CollegeID": "C001",
+              "CollegeName": "National Institute of Technology 01",
+              "Branch": "CSE",
+              "Address": 12,
+              "City": "Hyderabad",
+              "State": "Telangana",
+              "Email": "admissions@national.edu.org"
+            },
+            {
+              "CollegeID": "C002",
+              "CollegeName": "Global Institute of Technology 02",
+              "Branch": "ECE",
+              "Address": 45,
+              "City": "Bengaluru",
+              "State": "Karnataka",
+              "Email": "admissions@global.edu.org"
+            },
+            {
+              "CollegeID": "C003",
+              "CollegeName": "Heritage Institute of Technology 03",
+              "Branch": "IT",
+              "Address": 89,
+              "City": "Chennai",
+              "State": "Tamil Nadu",
+              "Email": "admissions@heritage.edu.org"
+            },
+            {
+              "CollegeID": "C004",
+              "CollegeName": "Greenfield Institute of Technology 04",
+              "Branch": "Mechanical",
+              "Address": 102,
+              "City": "Pune",
+              "State": "Maharashtra",
+              "Email": "admissions@greenfield.edu.org"
+            },
+            {
+              "CollegeID": "C005",
+              "CollegeName": "Sunrise Institute of Technology 05",
+              "Branch": "Civil",
+              "Address": 77,
+              "City": "Mumbai",
+              "State": "Maharashtra",
+              "Email": "admissions@sunrise.edu.org"
+            },
+            {
+              "CollegeID": "C006",
+              "CollegeName": "Techno Institute of Technology 06",
+              "Branch": "EEE",
+              "Address": 33,
+              "City": "Delhi",
+              "State": "Delhi",
+              "Email": "admissions@techno.edu.org"
+            },
+            {
+              "CollegeID": "C007",
+              "CollegeName": "Metro Institute of Technology 07",
+              "Address": 14,
+              "City": "Kolkata",
+              "State": "West Bengal",
+              "Email": "admissions@metro.edu.org"
+            },
+            {
+              "CollegeID": "C008",
+              "CollegeName": "Riverdale Institute of Technology 08",
+              "Branch": "AI&DS",
+              "City": "Ahmedabad",
+              "State": "Gujarat",
+              "Email": "admissions@riverdale.edu.org",
+              "Address": 66.77777777777777
+            },
+            {
+              "CollegeID": "C009",
+              "CollegeName": "National Institute of Technology 09",
+              "Address": 19,
+              "City": "Jaipur",
+              "State": "Rajasthan",
+              "Email": "admissions@national.edu.org"
+            },
+            {
+              "CollegeID": "C010",
+              "CollegeName": "Global Institute of Technology 10",
+              "Branch": "MBA",
+              "Address": 210,
+              "City": "Lucknow",
+              "State": "Uttar Pradesh"
+            }
+          ],
+          "summaryText": "Rows: 10\nColumns: CollegeID, CollegeName, Branch, Address, City, State, Email\nNumeric Columns: Address\nMeans: {\"Address\":66.77777777777777}\nMissing (before clean): {\"CollegeID\":0,\"CollegeName\":0,\"Branch\":2,\"Address\":1,\"City\":0,\"State\":0,\"Email\":1}\nSample (first 10 rows):\n[\n  {\n    \"CollegeID\": \"C001\",\n    \"CollegeName\": \"National Institute of Technology 01\",\n    \"Branch\": \"CSE\",\n    \"Address\": 12,\n    \"City\": \"Hyderabad\",\n    \"State\": \"Telangana\",\n    \"Email\": \"admissions@national.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C002\",\n    \"CollegeName\": \"Global Institute of Technology 02\",\n    \"Branch\": \"ECE\",\n    \"Address\": 45,\n    \"City\": \"Bengaluru\",\n    \"State\": \"Karnataka\",\n    \"Email\": \"admissions@global.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C003\",\n    \"CollegeName\": \"Heritage Institute of Technology 03\",\n    \"Branch\": \"IT\",\n    \"Address\": 89,\n    \"City\": \"Chennai\",\n    \"State\": \"Tamil Nadu\",\n    \"Email\": \"admissions@heritage.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C004\",\n    \"CollegeName\": \"Greenfield Institute of Technology 04\",\n    \"Branch\": \"Mechanical\",\n    \"Address\": 102,\n    \"City\": \"Pune\",\n    \"State\": \"Maharashtra\",\n    \"Email\": \"admissions@greenfield.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C005\",\n    \"CollegeName\": \"Sunrise Institute of Technology 05\",\n    \"Branch\": \"Civil\",\n    \"Address\": 77,\n    \"City\": \"Mumbai\",\n    \"State\": \"Maharashtra\",\n    \"Email\": \"admissions@sunrise.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C006\",\n    \"CollegeName\": \"Techno Institute of Technology 06\",\n    \"Branch\": \"EEE\",\n    \"Address\": 33,\n    \"City\": \"Delhi\",\n    \"State\": \"Delhi\",\n    \"Email\": \"admissions@techno.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C007\",\n    \"CollegeName\": \"Metro Institute of Technology 07\",\n    \"Address\": 14,\n    \"City\": \"Kolkata\",\n    \"State\": \"West Bengal\",\n    \"Email\": \"admissions@metro.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C008\",\n    \"CollegeName\": \"Riverdale Institute of Technology 08\",\n    \"Branch\": \"AI&DS\",\n    \"City\": \"Ahmedabad\",\n    \"State\": \"Gujarat\",\n    \"Email\": \"admissions@riverdale.edu.org\",\n    \"Address\": 66.77777777777777\n  },\n  {\n    \"CollegeID\": \"C009\",\n    \"CollegeName\": \"National Institute of Technology 09\",\n    \"Address\": 19,\n    \"City\": \"Jaipur\",\n    \"State\": \"Rajasthan\",\n    \"Email\": \"admissions@national.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C010\",\n    \"CollegeName\": \"Global Institute of Technology 10\",\n    \"Branch\": \"MBA\",\n    \"Address\": 210,\n    \"City\": \"Lucknow\",\n    \"State\": \"Uttar Pradesh\"\n  }\n]"
+        }
+      }
+    ],
+    "Merge": [
+      {
+        "json": {
+          "output": "{\n  \"subject\": \"Summary of College Dataset\",\n  \"summary_html\": \"<p>The dataset contains 10 rows and 7 columns detailing college information including CollegeID, CollegeName, Branch, Address, City, State, and Email.</p><p>Address is numeric with a mean of 66.78. Missing values occurred before cleaning in Branch (2), Address (1), and Email (1).</p><p>Several colleges lack Branch or Email entries; one row is missing the Email field entirely. States and cities are diverse across India.</p>\",\n  \"reasoning\": \"The dataset shows minor missingness primarily in categorical columns Branch and Email, and one missing numeric Address. Address values are varied with an average around 67. Some records miss Branch or Email, indicating partial data gaps. The geographical coverage spans multiple Indian states, reflecting dataset diversity.\"\n}"
+        }
+      },
+      {
+        "json": {
+          "rowCount": 10,
+          "columns": [
+            "CollegeID",
+            "CollegeName",
+            "Branch",
+            "Address",
+            "City",
+            "State",
+            "Email"
+          ],
+          "numericColumns": [
+            "Address"
+          ],
+          "means": {
+            "Address": 66.77777777777777
+          },
+          "missingCounts": {
+            "CollegeID": 0,
+            "CollegeName": 0,
+            "Branch": 2,
+            "Address": 1,
+            "City": 0,
+            "State": 0,
+            "Email": 1
+          },
+          "cleanedRows": [
+            {
+              "CollegeID": "C001",
+              "CollegeName": "National Institute of Technology 01",
+              "Branch": "CSE",
+              "Address": 12,
+              "City": "Hyderabad",
+              "State": "Telangana",
+              "Email": "admissions@national.edu.org"
+            },
+            {
+              "CollegeID": "C002",
+              "CollegeName": "Global Institute of Technology 02",
+              "Branch": "ECE",
+              "Address": 45,
+              "City": "Bengaluru",
+              "State": "Karnataka",
+              "Email": "admissions@global.edu.org"
+            },
+            {
+              "CollegeID": "C003",
+              "CollegeName": "Heritage Institute of Technology 03",
+              "Branch": "IT",
+              "Address": 89,
+              "City": "Chennai",
+              "State": "Tamil Nadu",
+              "Email": "admissions@heritage.edu.org"
+            },
+            {
+              "CollegeID": "C004",
+              "CollegeName": "Greenfield Institute of Technology 04",
+              "Branch": "Mechanical",
+              "Address": 102,
+              "City": "Pune",
+              "State": "Maharashtra",
+              "Email": "admissions@greenfield.edu.org"
+            },
+            {
+              "CollegeID": "C005",
+              "CollegeName": "Sunrise Institute of Technology 05",
+              "Branch": "Civil",
+              "Address": 77,
+              "City": "Mumbai",
+              "State": "Maharashtra",
+              "Email": "admissions@sunrise.edu.org"
+            },
+            {
+              "CollegeID": "C006",
+              "CollegeName": "Techno Institute of Technology 06",
+              "Branch": "EEE",
+              "Address": 33,
+              "City": "Delhi",
+              "State": "Delhi",
+              "Email": "admissions@techno.edu.org"
+            },
+            {
+              "CollegeID": "C007",
+              "CollegeName": "Metro Institute of Technology 07",
+              "Address": 14,
+              "City": "Kolkata",
+              "State": "West Bengal",
+              "Email": "admissions@metro.edu.org"
+            },
+            {
+              "CollegeID": "C008",
+              "CollegeName": "Riverdale Institute of Technology 08",
+              "Branch": "AI&DS",
+              "City": "Ahmedabad",
+              "State": "Gujarat",
+              "Email": "admissions@riverdale.edu.org",
+              "Address": 66.77777777777777
+            },
+            {
+              "CollegeID": "C009",
+              "CollegeName": "National Institute of Technology 09",
+              "Address": 19,
+              "City": "Jaipur",
+              "State": "Rajasthan",
+              "Email": "admissions@national.edu.org"
+            },
+            {
+              "CollegeID": "C010",
+              "CollegeName": "Global Institute of Technology 10",
+              "Branch": "MBA",
+              "Address": 210,
+              "City": "Lucknow",
+              "State": "Uttar Pradesh"
+            }
+          ],
+          "summaryText": "Rows: 10\nColumns: CollegeID, CollegeName, Branch, Address, City, State, Email\nNumeric Columns: Address\nMeans: {\"Address\":66.77777777777777}\nMissing (before clean): {\"CollegeID\":0,\"CollegeName\":0,\"Branch\":2,\"Address\":1,\"City\":0,\"State\":0,\"Email\":1}\nSample (first 10 rows):\n[\n  {\n    \"CollegeID\": \"C001\",\n    \"CollegeName\": \"National Institute of Technology 01\",\n    \"Branch\": \"CSE\",\n    \"Address\": 12,\n    \"City\": \"Hyderabad\",\n    \"State\": \"Telangana\",\n    \"Email\": \"admissions@national.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C002\",\n    \"CollegeName\": \"Global Institute of Technology 02\",\n    \"Branch\": \"ECE\",\n    \"Address\": 45,\n    \"City\": \"Bengaluru\",\n    \"State\": \"Karnataka\",\n    \"Email\": \"admissions@global.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C003\",\n    \"CollegeName\": \"Heritage Institute of Technology 03\",\n    \"Branch\": \"IT\",\n    \"Address\": 89,\n    \"City\": \"Chennai\",\n    \"State\": \"Tamil Nadu\",\n    \"Email\": \"admissions@heritage.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C004\",\n    \"CollegeName\": \"Greenfield Institute of Technology 04\",\n    \"Branch\": \"Mechanical\",\n    \"Address\": 102,\n    \"City\": \"Pune\",\n    \"State\": \"Maharashtra\",\n    \"Email\": \"admissions@greenfield.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C005\",\n    \"CollegeName\": \"Sunrise Institute of Technology 05\",\n    \"Branch\": \"Civil\",\n    \"Address\": 77,\n    \"City\": \"Mumbai\",\n    \"State\": \"Maharashtra\",\n    \"Email\": \"admissions@sunrise.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C006\",\n    \"CollegeName\": \"Techno Institute of Technology 06\",\n    \"Branch\": \"EEE\",\n    \"Address\": 33,\n    \"City\": \"Delhi\",\n    \"State\": \"Delhi\",\n    \"Email\": \"admissions@techno.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C007\",\n    \"CollegeName\": \"Metro Institute of Technology 07\",\n    \"Address\": 14,\n    \"City\": \"Kolkata\",\n    \"State\": \"West Bengal\",\n    \"Email\": \"admissions@metro.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C008\",\n    \"CollegeName\": \"Riverdale Institute of Technology 08\",\n    \"Branch\": \"AI&DS\",\n    \"City\": \"Ahmedabad\",\n    \"State\": \"Gujarat\",\n    \"Email\": \"admissions@riverdale.edu.org\",\n    \"Address\": 66.77777777777777\n  },\n  {\n    \"CollegeID\": \"C009\",\n    \"CollegeName\": \"National Institute of Technology 09\",\n    \"Address\": 19,\n    \"City\": \"Jaipur\",\n    \"State\": \"Rajasthan\",\n    \"Email\": \"admissions@national.edu.org\"\n  },\n  {\n    \"CollegeID\": \"C010\",\n    \"CollegeName\": \"Global Institute of Technology 10\",\n    \"Branch\": \"MBA\",\n    \"Address\": 210,\n    \"City\": \"Lucknow\",\n    \"State\": \"Uttar Pradesh\"\n  }\n]"
+        }
+      }
+    ],
+    "AI Agent": [
+      {
+        "json": {
+          "output": "{\n  \"subject\": \"Summary of College Dataset\",\n  \"summary_html\": \"<p>The dataset contains 10 rows and 7 columns detailing college information including CollegeID, CollegeName, Branch, Address, City, State, and Email.</p><p>Address is numeric with a mean of 66.78. Missing values occurred before cleaning in Branch (2), Address (1), and Email (1).</p><p>Several colleges lack Branch or Email entries; one row is missing the Email field entirely. States and cities are diverse across India.</p>\",\n  \"reasoning\": \"The dataset shows minor missingness primarily in categorical columns Branch and Email, and one missing numeric Address. Address values are varied with an average around 67. Some records miss Branch or Email, indicating partial data gaps. The geographical coverage spans multiple Indian states, reflecting dataset diversity.\"\n}"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dc4f6c6a-5459-485c-9c3f-52b894f4a10e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dea0691859c9aeb717420e8c6ea2b1a347ba82ac56d40cedc9406e5f2667166"
+  },
+  "id": "wN6TDXRF0YGj5fHX",
+  "tags": []
+}
