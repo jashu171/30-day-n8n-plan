@@ -1,0 +1,271 @@
+{
+  "name": "Intelligent Email Prioritization for Calendar Booking demo",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        0
+      ],
+      "id": "917450eb-2aea-496b-a442-63691f4a0e28",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "H8FsF1EFAlLLjH1d",
+          "name": "N8n office setup"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ROLE\n\nYou are an Email Assistant AI Agent for BotCampus.ai Support.\nYou continuously analyze incoming Gmail messages and decide whether to send an immediate, professional reply and book a doubt-clearing meeting on the calendar.\n\nINPUT CONTRACT (from upstream nodes)\n\nYou will receive the following fields (names are exact):\n\nsubject: string — email subject\n\nbody: string — plain-text or lightly-HTML email body\n\nfrom_name: string — sender display name (may be empty)\n\nfrom_email: string — sender email\n\nreceived_at_iso: string — RFC-3339 timestamp of when the email was received (e.g., 2025-09-24T06:30:21.095-04:00)\n\nnow_iso: string — RFC-3339 timestamp of “now” injected by workflow (e.g., from {{$now}})\n\nConfiguration (override via prompt injection or upstream variables if needed)\n\nKEYWORDS = [\"priority\", \"emergency\"] // case-insensitive, whole word\n\nTIMEZONE = \"Asia/Kolkata\" // output calendar times in this zone (+05:30)\n\nMEETING_OFFSET_HOURS = 1 // schedule start = received_at + 1 hour\n\nMEETING_DURATION_MIN = 30 // 30-minute meeting\n\nCALENDAR_TITLE_PREFIX = \"Support — Doubt-clearing: \"\n\nBRAND = \"BotCampus.ai\"\n\nNote: If the user’s instructions show a different offset (e.g., 2 hours), you may change MEETING_OFFSET_HOURS accordingly. Default is 1 hour.\n\nDECISION RULES\n\nKeyword detection (must/should reply):\n\nNormalize subject and body to lower case.\n\nDetect whole-word matches for any KEYWORDS. Regex example: \\b(priority|emergency)\\b (case-insensitive).\n\nIf any match exists → should_send = true, priority_detected = true.\n\nElse → should_send = false, priority_detected = false, but still return the JSON with reason.\n\nReply content policy (when should_send = true):\n\nTone: calm, empathetic, professional, concise.\n\nAcknowledge urgency and confirm that BotCampus.ai Support is on it.\n\nInclude a tentative calendar hold exactly MEETING_OFFSET_HOURS after received_at_iso, duration MEETING_DURATION_MIN.\n\nAsk the sender to confirm or propose another time if it doesn’t work.\n\nDo not invent ticket numbers.\n\nAvoid technical promises you cannot guarantee; say “we’re investigating”.\n\nCalendar time computation:\n\nParse received_at_iso (which may have any offset).\n\nCompute start_time = received_at + MEETING_OFFSET_HOURS.\n\nCompute end_time = start_time + MEETING_DURATION_MIN.\n\nConvert both to RFC-3339 in TIMEZONE (Asia/Kolkata, +05:30).\n\nProvide a human-readable local time string for the email body (e.g., “Sep 24, 2025, 18:00 IST”).\n\nYou are not creating the event yourself; you only output the fields so downstream nodes can create it.\n\nSafety & formatting:\n\nDo not include markdown in the output—JSON only.\n\nHTML in reply_html must be simple, inline-safe, and email-friendly (no external CSS).\n\nPreserve any sender name/email as provided; don’t guess.\n\nOUTPUT CONTRACT (JSON ONLY — no markdown, no commentary)\n\nReturn exactly the following JSON shape:\n\n{\n  \"should_send\": true,\n  \"reason\": \"string: why you decided this\",\n  \"priority_detected\": true,\n  \"reply_subject\": \"string\",\n  \"reply_html\": \"string: minimal HTML body\",\n  \"meeting\": {\n    \"summary\": \"string\",\n    \"description\": \"string (plain text; may repeat key details)\",\n    \"start_iso\": \"YYYY-MM-DDTHH:mm:ss+05:30\",\n    \"end_iso\": \"YYYY-MM-DDTHH:mm:ss+05:30\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"metadata\": {\n    \"received_at_iso\": \"string (as given)\",\n    \"computed_from\": \"received_at + MEETING_OFFSET_HOURS\",\n    \"offset_hours\": 1,\n    \"duration_min\": 30,\n    \"keywords_matched\": [\"priority\"]\n  }\n}\n\n\nIf no keyword match, return the same JSON with:\n\n\"should_send\": false\n\n\"priority_detected\": false\n\nEmpty strings for reply_subject, reply_html, and meeting fields, or include meeting with empty strings for all properties.\n\nA helpful reason describing why it didn’t trigger.\n\nREPLY COMPOSITION GUIDELINES (when should_send = true)\n\nreply_subject:\n\nFormat: \"[BotCampus.ai] We’re on it — {brief issue cue from subject}\"\n\nIf subject missing, use: \"[BotCampus.ai] We’re on it — Support update\"\n\nreply_html (simple and readable):\nInclude:\n\nGreeting with sender name if available, else email.\n\nAcknowledge urgency (“priority”/“emergency” recognized).\n\nState: “Our BotCampus.ai Support team is investigating and will work to fix this.”\n\nTentative meeting details with local time in IST and a short agenda.\n\nCTA: “Reply to confirm or propose another time.”\n\nSignature: “— BotCampus.ai Support”.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        -16
+      ],
+      "id": "d07e6a77-7403-4bde-a8df-78f86f39b449",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        224
+      ],
+      "id": "76532d21-e3f5-4538-8610-e4b3d3f537b9",
+      "name": "chat GPT",
+      "credentials": {
+        "openAiApi": {
+          "id": "cLCdY5swsxgvlPYD",
+          "name": "Open AI API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Function Node — Parse & Normalize AI Email-Agent Output\n *\n * INPUT (from previous node, typical fields):\n *   item.json.output OR item.json.text OR item.json.data\n *   OR item.json.choices[0].message.content  (LLM-like)\n *\n * EXPECTED AI OUTPUT (preferred):\n *   JSON with keys:\n *   {\n *     \"should_send\": boolean,\n *     \"reason\": string,\n *     \"priority_detected\": boolean,\n *     \"reply_subject\": string,\n *     \"reply_html\": string,\n *     \"meeting\": {\n *       \"summary\": string,\n *       \"description\": string,\n *       \"start_iso\": \"YYYY-MM-DDTHH:mm:ss+05:30\",\n *       \"end_iso\":   \"YYYY-MM-DDTHH:mm:ss+05:30\",\n *       \"timezone\":  \"Asia/Kolkata\"\n *     },\n *     \"metadata\": {...}\n *   }\n *\n * OUTPUT (normalized fields under item.json):\n *   item.json.should_send\n *   item.json.reason\n *   item.json.priority_detected\n *   item.json.reply_subject\n *   item.json.reply_html\n *   item.json.meeting_summary\n *   item.json.meeting_description\n *   item.json.meeting_start_iso\n *   item.json.meeting_end_iso\n *   item.json.meeting_timezone\n *   item.json._raw_ai (original raw string)\n *\n * Safe against: code fences, extra text, leading/trailing noise.\n */\n\nfunction pickRaw(item) {\n  return (\n    item.json?.output ??\n    item.json?.text ??\n    item.json?.data ??\n    item.json?.choices?.[0]?.message?.content ??\n    item.json?.choices?.[0]?.text ??\n    ''\n  );\n}\n\nfunction stripCodeFences(s) {\n  if (typeof s !== 'string') return '';\n  // Remove ```json ... ``` or ``` ... ```\n  return s\n    .replace(/^```[\\s\\S]*?\\n/, '')         // opening fence line\n    .replace(/```$/m, '')                  // trailing fence on last line\n    .replace(/```[\\s\\S]*?```/g, (m) => m.replace(/```/g, '')); // nested; best-effort\n}\n\nfunction extractFirstJsonBlock(s) {\n  // Tries to find the first balanced {...} or [...], returns substring or null.\n  const openers = ['{', '['];\n  for (const opener of openers) {\n    const closer = opener === '{' ? '}' : ']';\n    let depth = 0, start = -1;\n    for (let i = 0; i < s.length; i++) {\n      const ch = s[i];\n      if (ch === opener) {\n        if (depth === 0) start = i;\n        depth++;\n      } else if (ch === closer) {\n        if (depth > 0) depth--;\n        if (depth === 0 && start !== -1) {\n          return s.slice(start, i + 1);\n        }\n      }\n    }\n  }\n  return null;\n}\n\nfunction safeJsonParse(s) {\n  try {\n    return JSON.parse(s);\n  } catch {\n    return null;\n  }\n}\n\nfunction coerceStrings(v) {\n  return (v === null || v === undefined) ? '' : String(v);\n}\n\nfunction normalize(ai) {\n  // ai = parsed object or null\n  const out = {\n    should_send: false,\n    reason: '',\n    priority_detected: false,\n    reply_subject: '',\n    reply_html: '',\n    meeting_summary: '',\n    meeting_description: '',\n    meeting_start_iso: '',\n    meeting_end_iso: '',\n    meeting_timezone: '',\n    _meta: {}\n  };\n\n  if (ai && typeof ai === 'object') {\n    out.should_send = Boolean(ai.should_send);\n    out.reason = coerceStrings(ai.reason);\n    out.priority_detected = Boolean(ai.priority_detected);\n    out.reply_subject = coerceStrings(ai.reply_subject);\n    out.reply_html = coerceStrings(ai.reply_html);\n\n    if (ai.meeting && typeof ai.meeting === 'object') {\n      out.meeting_summary = coerceStrings(ai.meeting.summary);\n      out.meeting_description = coerceStrings(ai.meeting.description);\n      out.meeting_start_iso = coerceStrings(ai.meeting.start_iso);\n      out.meeting_end_iso = coerceStrings(ai.meeting.end_iso);\n      out.meeting_timezone = coerceStrings(ai.meeting.timezone);\n    }\n\n    // Pass through metadata if present\n    out._meta = ai.metadata ?? {};\n  }\n\n  return out;\n}\n\nreturn items.map((item) => {\n  const raw0 = pickRaw(item);\n  const raw = stripCodeFences(String(raw0 || '').trim());\n  let parsed = null;\n\n  // 1) direct parse\n  parsed = safeJsonParse(raw);\n\n  // 2) fallback: try to find first JSON block inside the string\n  if (!parsed) {\n    const block = extractFirstJsonBlock(raw);\n    if (block) {\n      parsed = safeJsonParse(block);\n    }\n  }\n\n  // 3) final normalization\n  const norm = normalize(parsed);\n\n  item.json = {\n    ...item.json,\n    should_send: norm.should_send,\n    reason: norm.reason,\n    priority_detected: norm.priority_detected,\n    reply_subject: norm.reply_subject,\n    reply_html: norm.reply_html,\n    meeting_summary: norm.meeting_summary,\n    meeting_description: norm.meeting_description,\n    meeting_start_iso: norm.meeting_start_iso,\n    meeting_end_iso: norm.meeting_end_iso,\n    meeting_timezone: norm.meeting_timezone,\n    _meta: norm._meta,\n    _raw_ai: String(raw0 || '')\n  };\n\n  // Optional: quick validity flags for downstream nodes\n  item.json._is_valid_reply =\n    !!(item.json.reply_subject && item.json.reply_html);\n  item.json._is_valid_meeting =\n    !!(item.json.meeting_start_iso && item.json.meeting_end_iso);\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -16
+      ],
+      "id": "ca2ec424-c62c-49e2-89e8-b9906ab910bc",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "2937d85f1e262c6966fbcb3e06873fe45ffb305521dc652e1465ab9c1130efbf@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "n8n"
+        },
+        "start": "={{ $json.meeting_start_iso }}",
+        "end": "={{ $json.meeting_end_iso }}",
+        "additionalFields": {
+          "description": "={{ $json.meeting_description }}",
+          "summary": "={{ $json.meeting_summary }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1232,
+        208
+      ],
+      "id": "eec49f0c-6e75-4c51-a6c0-1e606826632d",
+      "name": "Create an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "zw8ZNobw6sYEQBy7",
+          "name": "Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{ $('Gmail Trigger').item.json.threadId }}",
+        "messageId": "1997b33214bdb8d4",
+        "emailType": "html",
+        "message": "={{ $('Code in JavaScript').item.json.reply_html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        -48
+      ],
+      "id": "424ff1d4-51b4-437c-981d-f152a4019444",
+      "name": "Reply to a message",
+      "webhookId": "81d248f5-47d0-4757-95e2-53d9b52fb562",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "H8FsF1EFAlLLjH1d",
+          "name": "N8n office setup"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Gmail Trigger": [
+      {
+        "json": {
+          "id": "1997b33214bdb8d4",
+          "threadId": "1997b33214bdb8d4",
+          "snippet": "Hi Jaswanth, There has been a priority bug identified in production of BotCampus AI Website. It is disrupting payments of customers. Please look into it immediately. Thanks, BotCampus AI Support",
+          "payload": {
+            "mimeType": "multipart/alternative"
+          },
+          "sizeEstimate": 6565,
+          "historyId": "1965303",
+          "internalDate": "1758708566000",
+          "labels": [
+            {
+              "id": "INBOX",
+              "name": "INBOX"
+            },
+            {
+              "id": "IMPORTANT",
+              "name": "IMPORTANT"
+            },
+            {
+              "id": "CATEGORY_PERSONAL",
+              "name": "CATEGORY_PERSONAL"
+            },
+            {
+              "id": "YELLOW_STAR",
+              "name": "YELLOW_STAR"
+            },
+            {
+              "id": "STARRED",
+              "name": "STARRED"
+            }
+          ],
+          "From": "Support Team <support@botcampus.ai>",
+          "To": "jashwanthboddupally <jashwanthboddupally@gmail.com>",
+          "Subject": "Priority - Bug in Production"
+        }
+      }
+    ],
+    "Code in JavaScript": [
+      {
+        "json": {
+          "output": "{\n  \"should_send\": true,\n  \"reason\": \"Keyword 'priority' detected in email content indicating urgent support needed.\",\n  \"priority_detected\": true,\n  \"reply_subject\": \"[BotCampus.ai] We’re on it — Urgent support request\",\n  \"reply_html\": \"Hello, <br><br>We recognize the priority of your message. Our BotCampus.ai Support team is investigating and will work to fix this.<br><br>We have tentatively scheduled a doubt-clearing meeting on Sep 25, 2025, 11:00 IST for 30 minutes to assist you further.<br><br>Please reply to confirm or propose another time.<br><br>— BotCampus.ai Support\",\n  \"meeting\": {\n    \"summary\": \"Support — Doubt-clearing: Urgent support request\",\n    \"description\": \"Doubt-clearing meeting regarding urgent support request received via email.\",\n    \"start_iso\": \"2025-09-25T11:00:00+05:30\",\n    \"end_iso\": \"2025-09-25T11:30:00+05:30\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"metadata\": {\n    \"received_at_iso\": \"2025-09-25T10:00:00+05:30\",\n    \"computed_from\": \"received_at + MEETING_OFFSET_HOURS\",\n    \"offset_hours\": 1,\n    \"duration_min\": 30,\n    \"keywords_matched\": [\n      \"priority\"\n    ]\n  }\n}",
+          "should_send": true,
+          "reason": "Keyword 'priority' detected in email content indicating urgent support needed.",
+          "priority_detected": true,
+          "reply_subject": "[BotCampus.ai] We’re on it — Urgent support request",
+          "reply_html": "Hello, <br><br>We recognize the priority of your message. Our BotCampus.ai Support team is investigating and will work to fix this.<br><br>We have tentatively scheduled a doubt-clearing meeting on Sep 25, 2025, 11:00 IST for 30 minutes to assist you further.<br><br>Please reply to confirm or propose another time.<br><br>— BotCampus.ai Support",
+          "meeting_summary": "Support — Doubt-clearing: Urgent support request",
+          "meeting_description": "Doubt-clearing meeting regarding urgent support request received via email.",
+          "meeting_start_iso": "2025-09-25T11:00:00+05:30",
+          "meeting_end_iso": "2025-09-25T11:30:00+05:30",
+          "meeting_timezone": "Asia/Kolkata",
+          "_meta": {
+            "received_at_iso": "2025-09-25T10:00:00+05:30",
+            "computed_from": "received_at + MEETING_OFFSET_HOURS",
+            "offset_hours": 1,
+            "duration_min": 30,
+            "keywords_matched": [
+              "priority"
+            ]
+          },
+          "_raw_ai": "{\n  \"should_send\": true,\n  \"reason\": \"Keyword 'priority' detected in email content indicating urgent support needed.\",\n  \"priority_detected\": true,\n  \"reply_subject\": \"[BotCampus.ai] We’re on it — Urgent support request\",\n  \"reply_html\": \"Hello, <br><br>We recognize the priority of your message. Our BotCampus.ai Support team is investigating and will work to fix this.<br><br>We have tentatively scheduled a doubt-clearing meeting on Sep 25, 2025, 11:00 IST for 30 minutes to assist you further.<br><br>Please reply to confirm or propose another time.<br><br>— BotCampus.ai Support\",\n  \"meeting\": {\n    \"summary\": \"Support — Doubt-clearing: Urgent support request\",\n    \"description\": \"Doubt-clearing meeting regarding urgent support request received via email.\",\n    \"start_iso\": \"2025-09-25T11:00:00+05:30\",\n    \"end_iso\": \"2025-09-25T11:30:00+05:30\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"metadata\": {\n    \"received_at_iso\": \"2025-09-25T10:00:00+05:30\",\n    \"computed_from\": \"received_at + MEETING_OFFSET_HOURS\",\n    \"offset_hours\": 1,\n    \"duration_min\": 30,\n    \"keywords_matched\": [\n      \"priority\"\n    ]\n  }\n}",
+          "_is_valid_reply": true,
+          "_is_valid_meeting": true
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat GPT": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "032c9208-e464-44ba-b59b-654b7965bf6f",
+  "meta": {
+    "instanceId": "3dea0691859c9aeb717420e8c6ea2b1a347ba82ac56d40cedc9406e5f2667166"
+  },
+  "id": "6Ir11isaLd7vAgO5",
+  "tags": []
+}
