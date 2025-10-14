@@ -1,0 +1,559 @@
+{
+  "name": "Dashboard",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Data Form ",
+        "formDescription": "Enter all Subjects marks ",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name of Student"
+            },
+            {
+              "fieldLabel": "Telugu  Marks",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Maths Marks",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Hindi Marks",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "English Marks",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Physics Marks",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Gmail",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -400,
+        -64
+      ],
+      "id": "6e840984-4c59-4ba9-b040-63455059144a",
+      "name": "On form submission",
+      "webhookId": "4ca6160e-cd23-4dc6-a619-1c346174f2db"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1JfUJ3E0hevU3laYzaGUxULYT-SbBmxOEJVK-tD71qVI",
+          "mode": "list",
+          "cachedResultName": "n8n",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JfUJ3E0hevU3laYzaGUxULYT-SbBmxOEJVK-tD71qVI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1867648271,
+          "mode": "list",
+          "cachedResultName": "Dashboard",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JfUJ3E0hevU3laYzaGUxULYT-SbBmxOEJVK-tD71qVI/edit#gid=1867648271"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telugu": "={{ $json['Telugu  Marks'] }}",
+            "Hindi": "={{ $json['Hindi Marks'] }}",
+            "English": "={{ $json['English Marks'] }}",
+            "Maths": "={{ $json['Maths Marks'] }}",
+            "Physics ": "={{ $json['Physics Marks'] }}",
+            "Name": "={{ $json['Name of Student'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Telugu",
+              "displayName": "Telugu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Hindi",
+              "displayName": "Hindi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "English",
+              "displayName": "English",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Maths",
+              "displayName": "Maths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Physics ",
+              "displayName": "Physics ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TOTAL MARKS",
+              "displayName": "TOTAL MARKS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -144,
+        -64
+      ],
+      "id": "17bbf555-bc4f-4fe8-8265-f7cc99424073",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tqjFpBwTffq6qvQw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        816,
+        384
+      ],
+      "id": "841348a2-08a3-48f9-a7d2-7d49f0af0b80",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "41I2rVpURWg24NMv",
+          "name": "Gemini Api"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json.Gmail }}",
+        "subject": "Dashboard + Insight - AI Automated Mail",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1728,
+        -80
+      ],
+      "id": "9acc3d79-8fb9-4686-98e9-1f8f4f2e71c0",
+      "name": "Send a message",
+      "webhookId": "65e7b1e2-a9ee-467b-aede-d4703e236229",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xAMl4zSjBRQk6v6r",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the student data from previous node\nconst studentData = $input.item.json;\n\n// Extract all the data\nconst name = studentData.Name || 'Student';\nconst telugu = studentData.Telugu || 0;\nconst hindi = studentData.Hindi || 0;\nconst english = studentData.English || 0;\nconst maths = studentData.Maths || 0;\nconst physics = studentData.Physics || 0;\nconst totalMarks = studentData.TotalMarks || 0;\nconst maxMarks = studentData.MaxMarks || 500;\nconst percentage = studentData.Percentage || '0%';\n\n// Create a comprehensive prompt with all data merged\nconst mergedPrompt = `Create a comprehensive student performance dashboard based on the following data:\n\n**Student Name:** ${name}\n\n**Subject Scores:**\n- Telugu: ${telugu} / 100\n- Hindi: ${hindi} / 100\n- English: ${english} / 100\n- Maths: ${maths} / 100\n- Physics: ${physics} / 100\n\n**Overall Performance:**\n- Total Marks: ${totalMarks} / ${maxMarks}\n- Percentage: ${percentage}\n\nGenerate a beautiful HTML dashboard that:\n1. Shows an overview card with overall performance and percentage\n2. Displays subject-wise performance with visual indicators (progress bars or score cards)\n3. Highlights top performing subjects (strengths) in green\n4. Identifies subjects needing improvement (below 75%) in orange/red with specific recommendations\n5. Includes a motivational message based on performance level:\n   - 90%+: Excellent/Outstanding\n   - 80-89%: Very Good\n   - 70-79%: Good\n   - 60-69%: Satisfactory\n   - Below 60%: Needs Improvement\n6. Uses inline CSS styling for Gmail compatibility (no external stylesheets)\n7. Is responsive and visually appealing with modern design\n8. Includes a professional header with student name\n9. Uses a clean color scheme (blue/green for good, orange/yellow for average, red for poor)\n\n**Design Requirements:**\n- Use inline CSS only (for email compatibility)\n- Include a gradient header\n- Use cards or sections for each subject\n- Add percentage-based progress bars\n- Make it mobile-responsive\n- Use professional fonts (Arial, Helvetica, sans-serif)\n- Add subtle shadows and rounded corners for modern look\n\nReturn ONLY the complete HTML code (starting with <!DOCTYPE html>), ready to be sent via email. Do not include any explanation or markdown code blocks.`;\n\n// Return the merged prompt\nreturn {\n  json: {\n    chatInput: mergedPrompt,\n    studentName: name,\n    totalMarks: totalMarks,\n    percentage: percentage,\n    allScores: {\n      Telugu: telugu,\n      Hindi: hindi,\n      English: english,\n      Maths: maths,\n      Physics: physics\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        -64
+      ],
+      "id": "f984a58b-ed9b-413d-982a-3e3326f867ec",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the input data from the first item\nconst data = $input.first().json;\n\n// Extract and parse marks from each subject\nconst telugu = parseFloat(data.Telugu) || 0;\nconst hindi = parseFloat(data.Hindi) || 0;\nconst english = parseFloat(data.English) || 0;\nconst maths = parseFloat(data.Maths) || 0;\nconst physics = parseFloat(data[\"Physics \"] || data.Physics) || 0;\n\n// Total and percentage calculations\nconst totalMarks = telugu + hindi + english + maths + physics;\nconst maxMarks = 500;\nconst percentage = ((totalMarks / maxMarks) * 100).toFixed(2);\n\n// Return the structured result\nreturn [{\n  json: {\n    Name: data.Name,\n    Telugu: telugu,\n    Hindi: hindi,\n    English: english,\n    Maths: maths,\n    Physics: physics,\n    TotalMarks: totalMarks,\n    MaxMarks: maxMarks,\n    Percentage: percentage + \"%\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -64
+      ],
+      "id": "d19bbd8d-0eb8-4da1-bd37-0d89b235ab11",
+      "name": "calculations"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Student {{$json[\"Name\"]}} scored {{$json[\"Telugu\"]}} in Telugu, {{$json[\"Hindi\"]}} in Hindi, {{$json[\"English\"]}} in English, {{$json[\"Maths\"]}} in Maths, and  {{ $json.Physics }}in Physics. Total marks:{{ $json.MaxMarks }} and Percentage :{{ $json.Percentage }} . Give one-line performance feedback mentioning strong and weak subjects. \n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        336,
+        -64
+      ],
+      "id": "842fae7c-19da-4bf8-b8e3-5ddbd6a7c0e8",
+      "name": "Insight Agent"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1JfUJ3E0hevU3laYzaGUxULYT-SbBmxOEJVK-tD71qVI",
+          "mode": "list",
+          "cachedResultName": "n8n",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JfUJ3E0hevU3laYzaGUxULYT-SbBmxOEJVK-tD71qVI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1867648271,
+          "mode": "list",
+          "cachedResultName": "Dashboard",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JfUJ3E0hevU3laYzaGUxULYT-SbBmxOEJVK-tD71qVI/edit#gid=1867648271"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Append row in sheet').item.json.Name }}",
+            "TOTAL MARKS": "={{ $('calculations').item.json.TotalMarks }}",
+            "MAX MARKS": "={{ $('calculations').item.json.MaxMarks }}",
+            "PERCENTAGE": "={{ $('calculations').item.json.Percentage }}",
+            "AI_Insights": "={{ $json.output }}"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Telugu",
+              "displayName": "Telugu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hindi",
+              "displayName": "Hindi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "English",
+              "displayName": "English",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Maths",
+              "displayName": "Maths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Physics ",
+              "displayName": "Physics ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TOTAL MARKS",
+              "displayName": "TOTAL MARKS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MAX MARKS",
+              "displayName": "MAX MARKS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PERCENTAGE",
+              "displayName": "PERCENTAGE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI_Insights",
+              "displayName": "AI_Insights",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        704,
+        -64
+      ],
+      "id": "638b78e1-2ff5-4b93-a20c-bd43a7014cdb",
+      "name": "Update the sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tqjFpBwTffq6qvQw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert data analyst and web developer specializing in creating beautiful, interactive HTML dashboards. Your role is to:\n\n1. Analyze student performance data including scores across multiple subjects (Telugu, Hindi, English, Maths, Physics) and overall performance metrics\n2. Extract meaningful insights from the data such as:\n   - Overall performance percentage and grade\n   - Subject-wise strengths and weaknesses\n   - Areas needing improvement\n   - Comparison against maximum marks\n3. Create a modern, responsive HTML dashboard that:\n   - Uses clean, professional design with proper color coding (green for strengths, orange/red for areas needing improvement)\n   - Includes visual elements like progress bars, charts, or score cards\n   - Is mobile-friendly and works well in email clients\n   - Uses inline CSS for Gmail compatibility\n   - Presents data in an easy-to-understand format for students and parents\n4. Ensure the dashboard is self-contained (no external dependencies) and can be directly embedded in Gmail\n\nFocus on clarity, visual appeal, and actionable insights. Use encouraging language while being honest about areas needing improvement.",
+        "options": {
+          "systemMessage": "={{ $json.chatInput }}\n\nCreate a comprehensive student performance dashboard based on the following data:\n\nNOTE :- Add the pie chart , line graph for better visualiaztion \n**Student Name:** {{ $json.studentName }}\n\nInputs :\n{{ $json.chatInput }}\n\n**Overall Performance:**\n- Total Marks: {{ $('calculations').item.json.TotalMarks }}/{{ $('calculations').item.json.MaxMarks }}\n- Percentage: {{ $('calculations').item.json.Percentage }}\n\nGenerate a beautiful HTML dashboard that:\n1. Shows an overview card with overall performance and percentage\n2. Displays subject-wise performance with visual indicators\n3. Highlights top performing subjects (strengths)\n4. Identifies subjects needing improvement with specific recommendations\n5. Includes a motivational message based on performance\n6. Uses inline CSS styling for Gmail compatibility\n7. Is responsive and visually appealing\n\nReturn ONLY the complete HTML code, ready to be sent via email."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        -64
+      ],
+      "id": "1cc88b46-c7f2-4e7a-99fc-4c06effd8263",
+      "name": "Dashboard Creator Agent"
+    },
+    {
+      "parameters": {
+        "content": "## Workflow \n",
+        "height": 400,
+        "width": 2560,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -496,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "3461f987-2ec0-42fb-ade6-b1b18b9cdc39",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## LLM\n",
+        "height": 192,
+        "width": 256,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        336
+      ],
+      "typeVersion": 1,
+      "id": "18478cfe-6b53-4929-9590-b4e8d9dbcacc",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "calculations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Dashboard Creator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Insight Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Dashboard Creator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculations": {
+      "main": [
+        [
+          {
+            "node": "Insight Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insight Agent": {
+      "main": [
+        [
+          {
+            "node": "Update the sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard Creator Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b85a0d74-efeb-460d-afbd-ed8d51efa05a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ce10c10157d15b5f2fbc692795dabfeb448c588cac607b6a1251102b4354dcae"
+  },
+  "id": "qkdogaHPx3JFSxVd",
+  "tags": []
+}
