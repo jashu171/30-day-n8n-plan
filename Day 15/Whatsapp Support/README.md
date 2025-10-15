@@ -71,3 +71,68 @@ Send a WhatsApp message to the linked number and confirm your webhook (e.g., n8n
 **Notes**
 - If the QR expires, click **Restart** then **Get QR Code** again.
 - Keep the instance **Token** secret; it’s required for API calls from clients.
+
+
+
+
+
+
+
+# n8n WhatsApp Auto-Reply — Quick Start
+
+This guide shows how to install the **Evolution API** community node and run the WhatsApp auto-reply workflow.
+
+---
+
+## Prerequisite — Install the community node
+
+1. **Go to Settings**  
+   In n8n, click your avatar (bottom-left) → **Settings**.  
+   ![](images/1-goto-settings.png)
+
+2. **Open Community nodes**  
+   In the left sidebar, click **Community nodes** and then click **Install** (top-right).  
+   ![](images/2-community-nodes-page.png)
+
+3. **Install the package**  
+   In the modal, paste the npm package name: **`n8n-nodes-evolution-api-english`**.  
+   Tick **I understand the risks…**, then click **Install**.  
+   ![](images/3-install-modal.png)
+
+4. **Confirm it shows as installed**  
+   You should now see the package listed as installed.  
+   ![](images/4-installed-list.png)
+
+5. **Verify in editor**  
+   Back in the workflow editor, click **+** and search **Evolution API** — the node should appear.  
+   ![](images/5-find-evolution-node.png)
+
+---
+
+**Connections:** Webhook → AI Agent → Send text; Groq Chat Model → AI Agent (ai_languageModel); Simple Memory → AI Agent (ai_memory).
+
+---
+
+## Credentials
+
+- **Groq API:** add your key.  
+- **Evolution API:**  
+  - Server URL: `https://evolution-api-v1-8-7-6big.onrender.com`  
+  - API Key: `21uk1a66a121uk1a66a1`
+
+---
+
+## Point Evolution Manager to n8n
+
+Evolution Manager → **Events → Webhook**:  
+- **Enabled:** ON  
+- **URL:** Production URL from n8n Webhook node  
+- **Webhook Base64:** ON  
+- Enable **`MESSAGES_UPSERT`** → **Save**.
+
+---
+
+## Test
+
+Send a WhatsApp message to the connected number and watch an execution in n8n; the **Send text** node replies back.
+
