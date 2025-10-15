@@ -18,7 +18,7 @@ Fill the form and click **Login**:
 ## 2) Create an instance
 Click **Instance +** (top-right).
 
-![](images/2-create-instance.png)
+![](images/2-Create-instnace.png)
 
 ---
 
@@ -112,27 +112,136 @@ This guide shows how to install the **Evolution API** community node and run the
 **Connections:** Webhook → AI Agent → Send text; Groq Chat Model → AI Agent (ai_languageModel); Simple Memory → AI Agent (ai_memory).
 
 ---
+# n8n WhatsApp Auto-Reply — Quick Start
 
-## Credentials
-
-- **Groq API:** add your key.  
-- **Evolution API:**  
-  - Server URL: `https://evolution-api-v1-8-7-6big.onrender.com`  
-  - API Key: `21uk1a66a121uk1a66a1`
+This guide shows how to install the **Evolution API** community node and run the WhatsApp auto-reply workflow.
 
 ---
 
-## Point Evolution Manager to n8n
+## Prerequisite — Install the community node
 
-Evolution Manager → **Events → Webhook**:  
-- **Enabled:** ON  
-- **URL:** Production URL from n8n Webhook node  
-- **Webhook Base64:** ON  
-- Enable **`MESSAGES_UPSERT`** → **Save**.
+1. **Go to Settings**  
+   In n8n, click your avatar (bottom-left) → **Settings**.  
+   ![](images/goto-settings.png)
+
+2. **Open Community nodes**  
+   In the left sidebar, click **Community nodes** and then click **Install** (top-right).  
+   ![](images/Install-community-node.png)
+
+3. **Install the package**  
+   In the modal, paste the npm package name: **`n8n-nodes-evolution-api-english`**.  
+   Tick **I understand the risks…**, then click **Install**.  
+   ![](images/downlaod.png)
+
+4. **Confirm it shows as installed**  
+   You should now see the package listed as installed.
+
+5. **Verify in editor**  
+   Back in the workflow editor, click **+** and search **Evolution API** — the node should appear.  
+   ![](images/evolution-node.png)
+
+
+## A) Webhook (Trigger)
+
+- **Node:** Webhook  
+- **HTTP Method:** `POST`  
+- **Path:** `my-whats-app`
+
+This generates **Test** and **Production** URLs. Copy the **Production** URL into **Evolution Manager → Events → Webhook → URL**.
+
+> **Why?** Evolution sends incoming WhatsApp events to this webhook (same as the JSON’s `path: "my-whats-app"`).
 
 ---
 
+## B) Groq Chat Model
+
+- **Node:** Groq Chat Model  
+- **Model:** `qwen/qwen3-32b`  
+- **Credentials:** your Groq account
+
+---
+
+## C) Simple Memory (short chat memory per user)
+
+- **Node:** Simple Memory (Buffer Window)  
+- **Session ID type:** Custom key  
+- **Session key (Expression):**
+```js
+={{ $json.body.data.key.id }}
+```
+- **Context window length:** `15`
+
+> Uses the WhatsApp message key so replies stay contextual.
+
+---
+
+## D) AI Agent (author your reply)
+
+- **Node:** AI Agent  
+- **Text (Prompt input):**
+```txt
+=Input : {{ $json.body.data.message.conversation }}
+```
+- **System Message (paste):**
+```txt
+You are an advanced WhatsApp conversational AI that responds like a real human — natural, empathetic, and professional yet friendly.
+
+You receive structured input with keys:
+- conversation: latest WhatsApp message text
+- sender: sender’s WhatsApp ID
+- remoteJid: recipient’s WhatsApp ID
+- date_time: ISO timestamp
+- messageType: usually "conversation"
+
+GOAL
+Respond instantly in a human-like, context-aware, emotionally intelligent way. Keep replies concise and warm.
+
+STYLE
+- Friendly, natural, confident; professional touch
+- Keep replies under 20 words unless needed
+- Plain conversational English; 0–2 light emojis
+- Rarely use pushName
+- Avoid slang like “yo/bro”
+- Use natural cues: “Got it.” “I see.” etc.
+
+BEHAVIOR RULES
+1) Warm to greetings.
+2) Mirror emotion; show empathy when needed.
+3) Short sentences, natural flow.
+4) Ask for clarification if unclear, one line.
+5) Output only the reply text — no JSON/code.
+6) Never reveal internal logic.
+7) Avoid robotic or filler phrases.
+8) Correct grammar, relaxed tone.
+
+OUTPUT
+Return only the reply text (no metadata).
+```
+- **Wire language model:** **Groq Chat Model → AI Agent** (`ai_languageModel`)  
+- **Wire memory:** **Simple Memory → AI Agent** (`ai_memory`)
+
+---
+
+## E) Send text (send reply to WhatsApp)
+
+- **Node:** Evolution API (from `n8n-nodes-evolution-api-english`)  
+- **Resource:** `messages-api`  
+- **Credentials:** your Evolution account
+
+**Fields (Expressions):**
+```js
+// Instance name from webhook event
+={{ $('Webhook').item.json.body.instance }}
+
+// Recipient JID from event
+={{ $('Webhook').item.json.body.data.key.remoteJid }}
+
+// The AI Agent output text
+={{ $json.output }}
+```
+---
 ## Test
 
 Send a WhatsApp message to the connected number and watch an execution in n8n; the **Send text** node replies back.
 
+![](images/output.jpeg)
